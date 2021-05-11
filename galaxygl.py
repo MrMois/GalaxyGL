@@ -1,4 +1,6 @@
 import glfw
+import numpy as np
+from shader import ShaderProgram
 from OpenGL.GL import *
 
 
@@ -27,13 +29,55 @@ class Engine:
 
         glfw.make_context_current(self.window)
 
-    def run_main_loop(self):
+    def run_main_loop(self, exit_msg=True):
 
         while not glfw.window_should_close(self.window):
             glfw.poll_events()
+
+            glClearColor(0.0, 0.0, 0.0, 1.0)
+            glClear(GL_COLOR_BUFFER_BIT)
+            glDrawArrays(GL_TRIANGLES, 0, 3)
+
+            glfw.swap_buffers(self.window)
+
+        glfw.terminate()
+
+        if exit_msg:
+            print('Exiting main loop.')
 
 
 if __name__ == '__main__':
 
     engine = Engine()
+
+    vertices = [-0.5, -0.5, 0.0, 1.0, 0.0, 0.0,
+                0.5, -0.5, 0.0, 0.0, 1.0, 0.0,
+                0.0, 0.5, 0.0, 0.0, 0.0, 1.0]
+
+    vertices = np.array(vertices, dtype=np.float32)
+
+    with open('shaders/base.vert.glsl', 'r') as f:
+        vert_src = f.read()
+
+    with open('shaders/base.frag.glsl', 'r') as f:
+        frag_src = f.read()
+
+    shader = ShaderProgram([(vert_src, GL_VERTEX_SHADER), (frag_src, GL_FRAGMENT_SHADER)])
+
+    VAO = glGenVertexArrays(1)
+    glBindVertexArray(VAO)
+
+    VBO = glGenBuffers(1)
+    glBindBuffer(GL_ARRAY_BUFFER, VBO)
+    glBufferData(GL_ARRAY_BUFFER, vertices.nbytes, vertices, GL_STATIC_DRAW)
+
+    position = glGetAttribLocation(shader.handle, "a_position")
+    glEnableVertexAttribArray(position)
+    glVertexAttribPointer(position, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(0))
+
+    color = glGetAttribLocation(shader.handle, "a_color")
+    glEnableVertexAttribArray(color)
+    glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
+
+    shader.use()
     engine.run_main_loop()

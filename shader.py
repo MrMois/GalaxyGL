@@ -7,8 +7,13 @@ class ShaderProgram:
     def __init__(self, shaders):
 
         shaders = [compileShader(source, shader_type) for source, shader_type in shaders]
-        self.handle = compileProgram(*shaders)
 
+        for s in shaders:
+            # Check for compilation errors
+            assert glGetShaderiv(s, GL_COMPILE_STATUS) == GL_TRUE
+
+        self.handle = compileProgram(*shaders)
+        # Uniform references are stored in a dict, see register uniform
         self.uniforms = {}
 
     def register_uniform(self, uniform_name, uniform_type):
@@ -28,7 +33,8 @@ class ShaderProgram:
 
     @staticmethod
     def set_uniform_wrap(func, loc, is_matrix):
-
+        # Wraps OpenGL uniform setters into consistent interface
+        # The returned function only has value as parameter
         def wrapped(value):
             if is_matrix:
                 return func(loc, 1, GL_FALSE, value)
@@ -38,8 +44,12 @@ class ShaderProgram:
         return wrapped
 
     def set_uniform(self, uniform_name, value):
+        # Get according set function and upload value
         _, _, set_func = self.uniforms[uniform_name]
         set_func(value)
+
+    def use(self):
+        glUseProgram(self.handle)
 
 
 
