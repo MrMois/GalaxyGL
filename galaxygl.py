@@ -1,6 +1,7 @@
 import glfw
 import numpy as np
 from shader import ShaderProgram
+from camera import Camera
 from OpenGL.GL import *
 
 
@@ -28,6 +29,8 @@ class Engine:
             raise Exception('Could not create glfw window.')
 
         glfw.make_context_current(self.window)
+
+        self.camera = Camera(self.width / self.height)
 
     def run_main_loop(self, exit_msg=True):
 
@@ -78,6 +81,14 @@ if __name__ == '__main__':
     color = glGetAttribLocation(shader.handle, "a_color")
     glEnableVertexAttribArray(color)
     glVertexAttribPointer(color, 3, GL_FLOAT, GL_FALSE, 24, ctypes.c_void_p(12))
+
+    shader.register_uniform('viewMat', 'mat4f')
+    shader.register_uniform('projMat', 'mat4f')
+
+    engine.camera.update_view(position=[1, 1, 1], target=[0, 0, 0])
+
+    shader.set_uniform('viewMat', engine.camera.view)
+    shader.set_uniform('projMat', engine.camera.proj)
 
     shader.use()
     engine.run_main_loop()
